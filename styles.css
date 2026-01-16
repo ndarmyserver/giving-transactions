@@ -285,3 +285,31 @@ button:hover {
   opacity: 1;
   pointer-events: auto;
 }
+
+/* iOS form control normalization */
+input[type="date"],
+select {
+  -webkit-appearance: none;
+  appearance: none;
+  background-color: #fff;
+}
+
+/* Fix iOS select text color */
+select {
+  color: #1C1F58;
+}
+
+/* Placeholder-style color when no value is selected */
+select:has(option[value=""]:checked) {
+  color: #9ca3af;
+}
+
+/* iOS date input fixes */
+@supports (-webkit-touch-callout: none) {
+  input[type="date"] {
+    padding-right: 10px;
+    text-align: left !important;
+    color: #1C1F58 !important;
+    -webkit-text-fill-color: #1C1F58;
+  }
+}
