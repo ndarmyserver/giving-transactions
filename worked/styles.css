@@ -130,6 +130,7 @@ button:hover {
   display: flex;
   background: #e9ecef;
   border-radius: 999px;
+  padding: 4px;
   user-select: none;
 }
 
@@ -165,7 +166,6 @@ button:hover {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 10px 0;
   cursor: pointer;
   font-size: 16px;
   font-weight: 600;
@@ -175,6 +175,7 @@ button:hover {
   text-align: center;
   pointer-events: auto; /* ensure clicks work */
   border-radius: 999px; /* optional for pill look */
+  height: 36px; /* fix vertical alignment */
   -webkit-tap-highlight-color: transparent; /* remove blue tap highlight */
   touch-action: manipulation; /* improves tap responsiveness */
 }
@@ -183,15 +184,11 @@ button:hover {
   flex-direction: column;
   gap: 4px;
   font-size: 12px;
+  padding: 10px 10px;
 }
-
 
 .mode-toggle svg {
   display: block;
-}
-
-.mode-toggle img {
-  width: 24px;
 }
 
 .mode-toggle span {
@@ -222,15 +219,13 @@ button:hover {
   overflow: hidden;
   max-height: 0;
   opacity: 0;
-  transition: max-height 0.5s ease, opacity 0.5s ease, margin-bottom 0.5s ease;
-  margin-bottom: 0px;
+  transition: max-height 0.5s ease, opacity 0.5s ease;
 }
 
 .collapsible.show {
   max-height: 100px;
   /* enough for label + select */
   opacity: 1;
-  margin-bottom: 24px;
 }
 
 

@@ -1,4 +1,88 @@
-// ----- Firebase Logic -----
+import { Slider } from './slider.js';
+// ----- TOGGLE SECTION -----
+// Variables & Constants
+let currentMode = "Giving";
+const birthdayNameLabel = document.getElementById("birthdayNameLabel");
+const birthdayNameSelect = document.getElementById("birthdayName");
+const hiddenInput = document.getElementById("categoryInput");
+
+// Initialize sliders
+const modeSlider = new Slider({
+  toggleEl: document.querySelector('.mode-toggle'),
+  onActivate: (index, value) => {
+    currentMode = value;
+    configureCategoryToggle();
+  }
+});
+
+const categorySlider = new Slider({
+  toggleEl: document.querySelector('.category-toggle'),
+  hiddenInputEl: hiddenInput
+});
+
+// Reconfigure category slider dynamically
+function configureCategoryToggle() {
+  birthdayNameLabel.classList.remove("show");
+  birthdayNameSelect.required = false; // default
+
+  if (currentMode === "Giving") {
+    categorySlider.setLabels(["Charity", "Generosity"]);
+    categorySlider.setValues(["Charity", "Generosity"]);
+    categorySlider.clearClasses(); // remove income/expense
+    categorySlider.activate(0, { animate: false });
+  }
+
+  if (currentMode === "Birthday") {
+    categorySlider.setLabels(["Income +", "Expense -"]);
+    categorySlider.setValues(["Income", "Expense"]);
+    // Clear any previous classes
+    categorySlider.clearClasses();
+
+    // Add the classes we need for styling
+    categorySlider.buttons[0].classList.add("income");
+    categorySlider.buttons[1].classList.add("expense");
+
+    categorySlider.activate(1, { animate: false });
+
+    birthdayNameLabel.classList.add("show");
+    birthdayNameSelect.required = true; // make required only in Birthday mode
+  }
+
+  if (currentMode === "Reimburse") {
+    categorySlider.setLabels(["Shaida", "Other"]);
+    categorySlider.setValues(["Shaida", "Other"]);
+    categorySlider.clearClasses(); // remove income/expense
+    categorySlider.activate(0, { animate: false });
+  }
+}
+
+function computeCategory(formData) {
+  const base = formData.get("category");
+
+  if (currentMode === "Giving") {
+    return base;
+  }
+
+  if (currentMode === "Birthday") {
+    const name = birthdayNameSelect.value || "Unknown";
+    return `Birthday-${base}-${name}`;
+  }
+
+  if (currentMode === "Reimburse") {
+    return `Reimburse-${base}`;
+  }
+}
+
+function resetToggles() {
+  modeSlider.activate(0, { animate: false }); // 0 = first button (Giving)
+  categorySlider.activate(0, { animate: false }); // 0 = first button (Charity)
+  birthdayNameSelect.value = "";
+  birthdayNameLabel.classList.remove("show");
+  birthdayNameSelect.required = false;
+}
+
+
+// ----- FIREBASE SECTION -----
 
 // Your Firebase config from Firebase Console
 const firebaseConfig = {
@@ -56,6 +140,11 @@ auth.onAuthStateChanged(async user => {
     loginModal.classList.remove("show");
     document.querySelector(".card").classList.add("show");
     logoutBtn.classList.remove("hidden");
+    
+    // Wait one frame so layout exists
+    requestAnimationFrame(() => {
+      modeSlider.activate(0, { animate: false }); // this will also correctly activate the right category because of configureCategoryToggle
+    });
 
     populateDefaultVendors();
 
@@ -256,7 +345,7 @@ form.addEventListener("submit", async (e) => {
     const payload = {
       date: formData.get("date"),
       uid: user.uid,
-      category: formData.get("category"),
+      category: computeCategory(formData),
       vendor,
       description,
       amount: parseFloat(formData.get("amount")).toFixed(2)
@@ -277,6 +366,7 @@ form.addEventListener("submit", async (e) => {
     form.reset();
     setToday();
     resetVendorUI();
+    resetToggles();
     form.classList.add("hidden");
     thankYou.classList.remove("hidden");
   } catch (err) {
@@ -299,119 +389,12 @@ addAnother.addEventListener("click", () => {
   form.reset();
   setToday();
   resetVendorUI();
+  resetToggles();
 
-  // Reset category 
-  activateButton(0, false); // 0 = first button, false = instant transition
 });
 
-// Category toggle
-const buttons = document.querySelectorAll(".toggle-option");
-const pill = document.querySelector(".toggle-pill");
-const hiddenInput = document.getElementById("categoryInput");
-const toggle = document.querySelector(".category-toggle");
 
-let isDragging = false;
-let startX = 0;
-let pillStartX = 0;
-let animationFrame = null;
-
-// Utility: clamp a number
-const clamp = (num, min, max) => Math.max(min, Math.min(num, max));
-
-// Utility: animate with spring-like easing
-function animateSpring(from, to, duration = 300) {
-  const startTime = performance.now();
-
-  function animate(time) {
-    const t = (time - startTime) / duration;
-    const eased = t < 1 ? 1 - Math.pow(1 - t, 3) : 1; // ease-out cubic
-    const value = from + (to - from) * eased;
-    pill.style.transform = `translateX(${value}px)`;
-
-    if (t < 1) {
-      animationFrame = requestAnimationFrame(animate);
-    } else {
-      pill.style.transform = `translateX(${to}px)`;
-      cancelAnimationFrame(animationFrame);
-    }
-  }
-
-  animationFrame = requestAnimationFrame(animate);
-}
-
-// Activate a button by index (snap pill)
-function activateButton(index, useSpring = true) {
-  const optionWidth = toggle.offsetWidth / buttons.length;
-  const targetX = index * optionWidth;
-  buttons.forEach(b => b.classList.remove("active"));
-  buttons[index].classList.add("active");
-  hiddenInput.value = buttons[index].dataset.value;
-
-  if (useSpring) {
-    // spring animation for touch / iOS drag
-    animateSpring(parseFloat(pill.style.transform.replace("translateX(", "") || 0), targetX);
-  } else {
-    // instant CSS transition for desktop click
-    pill.style.transition = "transform 0.25s ease";
-    pill.style.transform = `translateX(${targetX}px)`;
-  }
-}
-
-// Initialize active button
-const initialIndex = [...buttons].findIndex(b => b.classList.contains("active"));
-activateButton(initialIndex);
-
-// Click support
-buttons.forEach((button, idx) => {
-  button.addEventListener("click", () => activateButton(idx, false));
-});
-
-// Touch/drag support
-toggle.addEventListener("touchstart", e => {
-  isDragging = true;
-  startX = e.touches[0].clientX;
-
-  // cancel any ongoing animation
-  if (animationFrame) cancelAnimationFrame(animationFrame);
-
-  // get current pill X in pixels
-  const style = window.getComputedStyle(pill);
-  const matrix = new WebKitCSSMatrix(style.transform);
-  pillStartX = matrix.m41;
-
-  pill.style.transition = "none"; // disable snap transition while dragging
-});
-
-toggle.addEventListener("touchmove", e => {
-  if (!isDragging) return;
-  const currentX = e.touches[0].clientX;
-  const deltaX = currentX - startX;
-  const optionWidth = toggle.offsetWidth / buttons.length;
-  const maxX = optionWidth * (buttons.length - 1); // exact right-most position
-  const newX = clamp(pillStartX + deltaX, 0, maxX);
-  pill.style.transform = `translateX(${newX}px)`;
-  e.preventDefault();
-}, { passive: false });
-
-toggle.addEventListener("touchend", () => {
-  if (!isDragging) return;
-  isDragging = false;
-
-  const optionWidth = toggle.offsetWidth / buttons.length;
-
-  // If user barely moved finger (<5px), treat it as a tap - do nothing here
-  if (Math.abs(pillStartX - parseFloat(pill.style.transform.replace("translateX(", "") || 0)) < 5) {
-    return;
-  }
-
-  const pillLeft = pill.getBoundingClientRect().left;
-  const toggleLeft = toggle.getBoundingClientRect().left;
-  const relativeX = pillLeft - toggleLeft + pill.offsetWidth / 2;
-  const closestIndex = Math.floor(relativeX / optionWidth);
-
-  activateButton(closestIndex);
-});
-
+// ----- LOGOUT SECTION -----
 // Log out user
 logoutBtn.addEventListener("click", async () => {
   try {
@@ -420,9 +403,8 @@ logoutBtn.addEventListener("click", async () => {
     // Reset transaction form
     form.reset();
     setToday();
-    activateButton(0, false);
-    otherVendorLabel.classList.add("hidden");
-    otherVendorInput.required = false;
+    resetVendorUI();
+    resetToggles();
 
     // Reset login form
     emailInput.value = "";
