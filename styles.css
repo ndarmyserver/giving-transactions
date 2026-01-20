@@ -22,6 +22,15 @@ body {
   background-blend-mode: overlay; /* smooth combination of both layers */
 }
 
+.app-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  justify-content: flex-start;
+  padding-bottom: 32px;
+}
+
 .card {
   background: white;
   margin: auto;
@@ -301,20 +310,15 @@ button:hover {
 
 .logout-btn {
   all: unset;
-  position: fixed;
-  bottom: 16px;
-  left: 50%;
-  transform: translateX(-50%);
+  margin-top: 16px;
   background: transparent;
   border: none;
   color: #6b7280;
   /* muted gray */
   font-size: 14px;
   cursor: pointer;
-  padding: 8px 12px;
   -webkit-tap-highlight-color: transparent; /* remove tap highlight on iOS/Android */
   touch-action: manipulation;               /* improve touch behavior */
-  transform: translateX(-50%) translateZ(0); /* force hardware acceleration */
 }
 
 .logout-btn:hover {
