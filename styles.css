@@ -334,7 +334,7 @@ button:hover {
 }
 
 .logout-btn:active {
-  transform: translateX(-50%) translateZ(0); /* prevent movement on press */
+  transform: sacle(0.98);
 }
 
 .logout-btn.hidden {
